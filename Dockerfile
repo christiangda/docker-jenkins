@@ -1,21 +1,21 @@
-FROM jenkins/jenkins:lts
-# if we want to install via apt
+FROM jenkins/jenkins:lts-slim
+
+ARG DOCKER_VERSION
 USER root
 
-RUN /usr/local/bin/install-plugins.sh docker-plugin
+ENV DOCKER_VERSION=${DOCKER_VERSION:-17.12.0-ce} \
+    DEBIAN_FRONTEND=noninteractive
 
 RUN /usr/local/bin/install-plugins.sh \
-        docker-plugin \
-        blueocean \
-    && apt-get update && apt-get install -y \
-        apt-transport-https \
+         docker-plugin \
+         blueocean \
+     && apt-get update && apt-get install -y --no-install-recommends \
+        wget \
+        gnupg \
         ca-certificates \
-        curl \
-        software-properties-common \
-    && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - \
-    && add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu zesty stable" \
-    && apt-get update \
-    && apt-get install -y docker-ce
+    && wget -q "https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_VERSION}.tgz" \
+    && tar -xv -C /usr/bin --strip-components=1 -f "docker-${DOCKER_VERSION}.tgz" \
+    && rm -rf "docker-${DOCKER_VERSION}.tgz" \
+    && rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/*
 
-# drop back to the regular jenkins user - good practice
 USER jenkins
